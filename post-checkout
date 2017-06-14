@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+import sys, os, re
+import requests
+from subprocess import check_output
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
+import json
+# Collect the parameters
+previous_head = sys.argv[1]
+new_head = sys.argv[2]
+is_branch_checkout = sys.argv[3]
+
+dirpath = os.path.dirname(os.path.abspath(__file__))
+pw = open(dirpath+'/creds').read().strip()
+
+if is_branch_checkout == "0":
+    sys.exit(0)
+else:
+    resp = requests.get(
+        'https://projects.databrary.org/jira/rest/api/search?jql=assignee%3Dmaksim.levental&fields=summary%2Ccreator',
+        auth=('maksim.levental', pw)
+    ).json()
+    my_issues = filter(lambda x: x['fields']['creator']['key'] == 'maksim.levental', resp['issues'])
+    summaries = set(map(lambda x: x['fields']['summary'], my_issues))
+    current_branch = ' '.join(check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).strip().split('_')).title()
+    if current_branch not in summaries:
+        issue = """{
+                    "fields": {
+                        "project": {
+                            "self": "https://projects.databrary.org/jira/rest/api/2/project/10003",
+                            "id": "10003",
+                            "key": "DBD",
+                            "name": "Databrary Development",
+                            "projectCategory": {
+                                "self": "https://projects.databrary.org/jira/rest/api/2/projectCategory/10001",
+                                "id": "10001",
+                                "name": "Technical"
+                            }
+                        },
+                        "summary": "%s",
+                        "description": "%s",
+                        "issuetype": {
+                            "name": "Task"
+                        },
+                        "assignee": {
+                            "self": "https://projects.databrary.org/jira/rest/api/2/user?username=maksim.levental",
+                            "name": "maksim.levental",
+                            "key": "maksim.levental"
+                        },
+                        "reporter": {
+                            "self": "https://projects.databrary.org/jira/rest/api/2/user?username=maksim.levental",
+                            "name": "maksim.levental",
+                            "key": "maksim.levental"
+                        }
+                    }
+                }""" % (current_branch, current_branch)
+        issue_json = json.loads(issue)
+        resp = requests.post('https://projects.databrary.org/jira/rest/api/2/issue', json=issue_json, auth=('maksim.levental', pw))
