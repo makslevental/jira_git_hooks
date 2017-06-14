@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+
+import sys, os
+
+# Collect the parameters
+commit_msg_filepath = sys.argv[1]
+from subprocess import check_output
+import requests
+dirpath = os.path.dirname(os.path.abspath(__file__))
+pw = open(dirpath+'/creds').read().strip()
+log = check_output(['git', 'log', '-1', '--pretty=%B'])
+resp = requests.get(
+    'https://projects.databrary.org/jira/rest/api/2/search?jql=assignee%3Dmaksim.levental&fields=summary%2Ccreator',
+    auth=('maksim.levental', pw)
+).json()
+my_issues = filter(lambda x: x['fields']['creator']['key'] == 'maksim.levental', resp['issues'])
+summaries = {x['fields']['summary']: x['key'] for x in my_issues}
+current_branch = ' '.join(check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).strip().split('_')).title()
+branch_id = summaries[current_branch]
+
+commit_msg_file = open(commit_msg_filepath, 'r')
+commit_msg = commit_msg_file.read()
+commit_msg_file.close()
+commit_msg = branch_id + ' ' + commit_msg
+commit_msg_file = open(commit_msg_filepath, 'w')
+commit_msg_file.write(commit_msg)
+commit_msg_file.close()
