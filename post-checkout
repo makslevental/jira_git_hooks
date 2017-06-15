@@ -17,7 +17,7 @@ if is_branch_checkout == "0":
     sys.exit(0)
 else:
     resp = requests.get(
-        'https://projects.databrary.org/jira/rest/api/search?jql=assignee%3Dmaksim.levental&fields=summary%2Ccreator',
+        'https://projects.databrary.org/jira/rest/api/2/search?jql=assignee%3Dmaksim.levental&fields=summary%2Ccreator',
         auth=('maksim.levental', pw)
     ).json()
     my_issues = filter(lambda x: x['fields']['creator']['key'] == 'maksim.levental', resp['issues'])
