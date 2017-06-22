@@ -4,6 +4,8 @@ import requests
 import os
 import json
 log = check_output(['git', 'log', '-1', '--pretty=%B'])
+reflog = check_output(['git', 'reflog', '-1'])
+print reflog
 dirpath = os.path.dirname(os.path.abspath(__file__))
 pw = open(dirpath+'/creds').read().strip()
 resp = requests.get(
@@ -19,3 +21,13 @@ comment = '{"body": "%s"}' % log.strip()
 
 resp = requests.post('https://projects.databrary.org/jira/rest/api/2/issue/{}/comment'.format(branch_id), json=json.loads(comment),
                      auth=('maksim.levental', pw))
+
+comment = '{"transition": {"id": "31"}}'  # 41 is the done transition
+
+print resp.status_code
+
+resp = requests.post('https://projects.databrary.org/jira/rest/api/2/issue/{}/transitions'.format(branch_id),
+                     json=json.loads(comment),
+                     auth=('maksim.levental', pw))
+
+print resp.status_code

@@ -55,4 +55,10 @@ else:
                     }
                 }""" % (current_branch, current_branch)
         issue_json = json.loads(issue)
-        resp = requests.post('https://projects.databrary.org/jira/rest/api/2/issue', json=issue_json, auth=('maksim.levental', pw))
+        resp = requests.post('https://projects.databrary.org/jira/rest/api/2/issue', json=issue_json, auth=('maksim.levental', pw)).json()
+
+        comment = '{"transition": {"id": "31"}}'  # 31 is the in progress id
+
+        resp = requests.post('https://projects.databrary.org/jira/rest/api/2/issue/{}/transitions'.format(resp['id']),
+                               json=json.loads(comment),
+                               auth=('maksim.levental', pw))

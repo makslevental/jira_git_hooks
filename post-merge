@@ -1,0 +1,26 @@
+#!/usr/bin/env python
+from subprocess import check_output
+import requests
+import os
+import json
+# relog = check_output(['git', 'log', '-1', '--pretty=%B'])
+# 66c58a8 HEAD@{0}: merge test_branch_merge: Fast-forward
+
+reflog = check_output(['git', 'reflog', '-1'])
+merged_branch = ' '.join(reflog.split()[3].split('/')[-1].replace(':','').split('_')).title()
+dirpath = os.path.dirname(os.path.abspath(__file__))
+pw = open(dirpath+'/creds').read().strip()
+resp = requests.get(
+    'https://projects.databrary.org/jira/rest/api/2/search?jql=assignee%3Dmaksim.levental&fields=summary%2Ccreator',
+    auth=('maksim.levental', pw)
+).json()
+my_issues = filter(lambda x: x['fields']['creator']['key'] == 'maksim.levental', resp['issues'])
+summaries = {x['fields']['summary']: x['id'] for x in my_issues}
+# current_branch = ' '.join(check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).strip().split('_')).title()
+branch_id = summaries[merged_branch]
+
+comment = '{"transition": {"id": "41"}}' # 41 is the done transition
+
+resp = requests.post('https://projects.databrary.org/jira/rest/api/2/issue/{}/transitions'.format(branch_id),  json=json.loads(comment),
+                     auth=('maksim.levental', pw))
+print resp.status_code
